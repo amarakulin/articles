@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Web application to upload images"
+Parameters:
+  VPC:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnet:
+    Description: Public Subnet
+    Type: AWS::EC2::Subnet::Id
+  FirstDBSubnet:
+    Type: AWS::EC2::Subnet::Id
+  SecondDBSubnet:
+    Type: AWS::EC2::Subnet::Id
+
+  OwnerIp:
+    Description: IP of your machine with mask /32
+    Type: String
+  KeyPair:
+    Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
+    Type: AWS::EC2::KeyPair::KeyName
+  ServiceRoleName:
+    Description: Service role name
+    Type: String
+    Default: DefaultServiceRoleName
+  ServiceS3PolicyName:
+    Description: Service policy name for S3
+    Type: String
+    Default: DefaultServicePolicyName
+
+
+  DBVersion:
+    Description: Version of the postgres engine
+    Type: String
+    Default: '13.7'
+    AllowedValues: [ '13.7' ]
+  DBIdentifier:
+    Description: A unique name for the DB instance.
+    Type: String
+    Default: dbidentifier
+  DBAllocatedStorage:
+    Description: The amount of storage in gibibytes (GiB) to be initially allocated for the database instance
+    Type: Number
+    Default: 5
+    MinValue: 5
+    MaxValue: 25
+  DBInstanceClass:
+    Description: Version of the postgres engine
+    Type: String
+    Default: db.t3.micro
+    AllowedValues: [ db.t3.micro ]
+  DBName:
+    Description: Database name
+    Type: String
+    Default: imagedb
+  DBUsername:
+    Description: Database username
+    Type: String
+    Default: postgres
+  DBPassword:
+    Description: Database password
+    Type: String
+    NoEcho: true
+    Default: 12345678
+  DBPort:
+    Description: Database port
+    Type: Number
+    Default: 5432
+
+Resources:
+  Server:
+    Type: AWS::EC2::Instance
+    Properties:
+      SecurityGroupIds:
+        - !Ref InternalTraffic
+        - !Ref PublicHttp
+        - !Ref OwnerSSH
+#     TODO Find a good one ImageId or get rid of it
+      ImageId: ami-043097594a7df80ec
+      InstanceType: t2.micro
+      IamInstanceProfile: !Ref ServiceInstanceProfile
+      SubnetId: !Ref PublicSubnet
+      KeyName: !Ref KeyPair
+      UserData:
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash
+          mkdir java
+          cd java
+          sudo yum install java-17-amazon-corretto-devel -y
+          cd ../  
+          mkdir app
+#          aws s3 cp s3://src-articles/ec2-rds/AWS-EC2-RDS-1.0-SNAPSHOT.jar ./app/
+#         TODO describe in the article that download sources via UserData could be not a good option, the functional need to configure server only
+
+  ServiceInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ServiceRole
+
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref ServiceRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+
+  ServiceS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Ref ServiceS3PolicyName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:Get*
+            Resource:
+              - arn:aws:s3:::src-articles/*
+              - arn:aws:s3:::src-articles
+      Roles:
+        - !Ref ServiceRole
+
+  PublicHttp:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        CidrIp: !Ref OwnerIp
+        FromPort: 8080
+        ToPort: 8080
+        IpProtocol: tcp
+      GroupDescription: public access
+
+  OwnerSSH:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        CidrIp: !Ref OwnerIp
+        FromPort: 22
+        ToPort: 22
+        IpProtocol: tcp
+      GroupDescription: public ssh access
+
+  DB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      EngineVersion: !Ref DBVersion
+      DBInstanceIdentifier: !Ref DBIdentifier
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: db.t3.micro
+      DBName: !Ref DBName
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref InternalTraffic
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: access to db
+      SubnetIds:
+        - !Ref FirstDBSubnet
+        - !Ref SecondDBSubnet
+
+  InternalTraffic:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: internal access
+
+  InternalTrafficRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref InternalTraffic
+      IpProtocol: All
+      SourceSecurityGroupId: !GetAtt
+        - InternalTraffic
+        - GroupId
+
+Outputs:
+  DBUrl:
+    Description: Url of RDS Instance
+    Value: !GetAtt DB.Endpoint.Address
+    Export:
+      Name: DbUrl

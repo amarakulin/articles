@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "OwnerIp",
+    "ParameterValue": "your-ip/32"
+  },
+  {
+    "ParameterKey": "KeyPair",
+    "ParameterValue": "your-key-pair"
+  }
+]
