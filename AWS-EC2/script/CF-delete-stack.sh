@@ -1,4 +1,11 @@
+REGION=eu-central-1
+PROFILE=ArticleUser
+STACK_NAME=EC2-RDS-Stack
+
+export AWS_PROFILE=${PROFILE}
+export AWS_REGION=${REGION}
+
+echo "Deleting ${STACK_NAME}"
+
 aws cloudformation delete-stack \
-      --stack-name EC2-RDS-Stack \
-      --profile ArticleUser \
-      --region eu-central-1
+      --stack-name ${STACK_NAME}

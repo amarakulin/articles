@@ -1,29 +1,31 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "Parent Stack"
-Parameters:
-  OwnerIp:
-    Description: IP of your machine with mask /32
-    Type: String
-  KeyPair:
-    Description: The name of an existing Amazon EC2 key pair in this region to use to SSH into the Amazon EC2 instances.
-    Type: AWS::EC2::KeyPair::KeyName
-
 Resources:
   VpcStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: https://src-articles.s3.eu-central-1.amazonaws.com/ec2-rds/CF-vpc.yaml
 
-  ServerAndDBStack:
+  DBStack:
     Type: AWS::CloudFormation::Stack
     DependsOn:
       - VpcStack
+    Properties:
+      TemplateURL: https://src-articles.s3.eu-central-1.amazonaws.com/ec2-rds/CF-db.yaml
+      Parameters:
+        FirstDBSubnet: !GetAtt VpcStack.Outputs.FirstDBSubnet
+        SecondDBSubnet: !GetAtt VpcStack.Outputs.SecondDBSubnet
+        InternalTraffic: !GetAtt VpcStack.Outputs.InternalTraffic
+
+  ServerStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - VpcStack
+      - DBStack
     Properties:
       TemplateURL: https://src-articles.s3.eu-central-1.amazonaws.com/ec2-rds/CF-app.yaml
       Parameters:
         VPC: !GetAtt VpcStack.Outputs.VPC
         PublicSubnet: !GetAtt VpcStack.Outputs.PublicSubnet
-        FirstDBSubnet: !GetAtt VpcStack.Outputs.FirstDBSubnet
-        SecondDBSubnet: !GetAtt VpcStack.Outputs.SecondDBSubnet
-        OwnerIp: !Ref OwnerIp
-        KeyPair: !Ref KeyPair
+        InternalTraffic: !GetAtt VpcStack.Outputs.InternalTraffic
+        PublicTraffic: !GetAtt VpcStack.Outputs.PublicTraffic

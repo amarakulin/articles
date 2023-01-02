@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "DB for web application"
+Parameters:
+  FirstDBSubnet:
+    Type: AWS::EC2::Subnet::Id
+  SecondDBSubnet:
+    Type: AWS::EC2::Subnet::Id
+  InternalTraffic:
+    Type: AWS::EC2::SecurityGroup::Id
+
+  DBVersion:
+    Description: Version of the postgres engine
+    Type: String
+    Default: '13.7'
+    AllowedValues: [ '13.7' ]
+  DBIdentifier:
+    Description: A unique name for the DB instance.
+    Type: String
+    Default: dbidentifier
+  DBAllocatedStorage:
+    Description: The amount of storage in gibibytes (GiB) to be initially allocated for the database instance
+    Type: Number
+    Default: 5
+    MinValue: 5
+    MaxValue: 25
+  DBInstanceClass:
+    Description: Version of the postgres engine
+    Type: String
+    Default: db.t3.micro
+    AllowedValues: [ db.t3.micro ]
+  DBName: #TODO how to pass the parameters from the parent stack or from the script?
+    Description: Database name
+    Type: String
+    Default: imagedb
+  DBUsername:
+    Description: Database username
+    Type: String
+    Default: postgres
+  DBPassword:
+    Description: Database password
+    Type: String
+    NoEcho: true
+    Default: 12345678
+  DBPort:
+    Description: Database port
+    Type: Number
+    Default: 5432
+
+Resources:
+  DB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      EngineVersion: !Ref DBVersion
+      DBInstanceIdentifier: !Ref DBIdentifier
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: db.t3.micro
+      DBName: !Ref DBName
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref InternalTraffic
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: access to db
+      SubnetIds:
+        - !Ref FirstDBSubnet
+        - !Ref SecondDBSubnet
+
+Outputs:
+  DbUrl:
+    Description: Url of RDS Instance
+    Value: !GetAtt DB.Endpoint.Address
+  DbPort:
+    Description: Database port
+    Value: !Ref DBPort
+  DbName:
+    Description: Database name
+    Value: !Ref DBName
+  DbUsername:
+    Description: Database username
+    Value: !Ref DBUsername
+  DbPassword:
+    Description: Database password
+    Value: !Ref DBPassword
