@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "DB for web application"
+Parameters:
+  FirstDBSubnet:
+    Type: AWS::EC2::Subnet::Id
+  SecondDBSubnet:
+    Type: AWS::EC2::Subnet::Id
+  InternalTraffic:
+    Type: AWS::EC2::SecurityGroup::Id
+  DBVersion:
+    Type: String
+  DBIdentifier:
+    Type: String
+  DBAllocatedStorage:
+    Type: Number
+    MinValue: 5
+    MaxValue: 25
+  DBInstanceClass:
+    Type: String
+  DBName:
+    Type: String
+  DBUsername:
+    Type: String
+  DBPassword:
+    Type: String
+    NoEcho: true
+  DBPort:
+    Type: Number
+
+Resources:
+  DB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      EngineVersion: !Ref DBVersion
+      DBInstanceIdentifier: !Ref DBIdentifier
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: db.t3.micro
+      DBName: !Ref DBName
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref InternalTraffic
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Access to db
+      SubnetIds:
+        - !Ref FirstDBSubnet
+        - !Ref SecondDBSubnet
+
+Outputs:
+  DbUrl:
+    Description: Url of RDS Instance
+    Value: !GetAtt DB.Endpoint.Address
+  DbPort:
+    Description: Database port
+    Value: !Ref DBPort
+  DbName:
+    Description: Database name
+    Value: !Ref DBName
+  DbUsername:
+    Description: Database username
+    Value: !Ref DBUsername
+  DbPassword:
+    Description: Database password
+    Value: !Ref DBPassword

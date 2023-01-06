@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Web application to upload images"
+Parameters:
+  PublicSubnet:
+    Type: AWS::EC2::Subnet::Id
+  InternalTraffic:
+    Type: AWS::EC2::SecurityGroup::Id
+  PublicTraffic:
+    Type: AWS::EC2::SecurityGroup::Id
+  WebAppRoleName:
+    Type: String
+  WebAppSSMPolicyArn:
+    Type: String
+
+Resources:
+  WebApp:
+    Type: AWS::EC2::Instance
+    Properties:
+      SecurityGroupIds:
+        - !Ref InternalTraffic
+        - !Ref PublicTraffic
+      ImageId: ami-0a261c0e5f51090b1
+      InstanceType: t2.micro
+      IamInstanceProfile: !Ref WebAppInstanceProfile
+      SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: "EC2Instance"
+          Value: "WebApp"
+      UserData:
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash
+          mkdir java
+          cd java
+          sudo yum install java-17-amazon-corretto-devel -y
+
+  WebAppInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref WebAppRole
+
+  WebAppRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref WebAppRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - !Ref WebAppS3Policy
+        - !Ref WebAppSSMPolicyArn
+
+  WebAppS3Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:Get*
+            Resource:
+              - arn:aws:s3:::src-articles/*
+              - arn:aws:s3:::src-articles

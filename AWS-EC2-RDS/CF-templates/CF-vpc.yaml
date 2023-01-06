@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "VPC with public and db subnets"
+Parameters:
+  PublicAvaliabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+  FirstDBAvaliabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+  SecondDBAvaliabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+  VPCCidrBlock:
+    Type: String
+  PublicCidrBlock:
+    Type: String
+  FirstDBCidrBlock:
+    Type: String
+  SecondDBCidrBlock:
+    Type: String
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidrBlock
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties: {}
+
+  VPCInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref PublicAvaliabilityZone
+      CidrBlock: !Ref PublicCidrBlock
+      VpcId: !Ref VPC
+      MapPublicIpOnLaunch: true
+
+  FirstDBSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref FirstDBAvaliabilityZone
+      CidrBlock: !Ref FirstDBCidrBlock
+      VpcId: !Ref VPC
+
+  SecondDBSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref SecondDBAvaliabilityZone
+      CidrBlock: !Ref SecondDBCidrBlock
+      VpcId: !Ref VPC
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  DBRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  FirstDBSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DBRouteTable
+      SubnetId: !Ref FirstDBSubnet
+
+  SecondDBSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DBRouteTable
+      SubnetId: !Ref SecondDBSubnet
+
+  PublicIGWRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+
+
+  PublicTraffic:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        CidrIp: 0.0.0.0/0
+        FromPort: 8080
+        ToPort: 8080
+        IpProtocol: tcp
+      GroupDescription: public access
+
+  InternalTraffic:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: internal access
+
+  InternalTrafficRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref InternalTraffic
+      IpProtocol: All
+      SourceSecurityGroupId: !GetAtt
+        - InternalTraffic
+        - GroupId
+
+Outputs:
+  VPC:
+    Description: The VPC id
+    Value: !Ref VPC
+  PublicSubnet:
+    Description: Public Subnet
+    Value: !Ref PublicSubnet
+  FirstDBSubnet:
+    Description: First DB Subnet
+    Value: !Ref FirstDBSubnet
+  SecondDBSubnet:
+    Description: Second DB Subnet
+    Value: !Ref SecondDBSubnet
+  PublicTraffic:
+    Description: Public Traffic
+    Value: !Ref PublicTraffic
+  InternalTraffic:
+    Description: Internal Traffic
+    Value: !Ref InternalTraffic

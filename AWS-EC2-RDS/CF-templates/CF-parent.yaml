@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Parent Stack"
+Parameters:
+  #VPC params
+  PublicAvaliabilityZone:
+    Description: Provide name of the Public AvaliabilityZone
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-central-1a
+  FirstDBAvaliabilityZone:
+    Description: Provide name of the First AvaliabilityZone for DB
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-central-1b
+  SecondDBAvaliabilityZone:
+    Description: Provide name of the Second AvaliabilityZone for DB
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: eu-central-1c
+  VPCCidrBlock:
+    Description: Provide the CidrBlock for VPC
+    Type: String
+    Default: 10.0.0.0/16
+  PublicCidrBlock:
+    Description: Provide the CidrBlock for public subnet
+    Type: String
+    Default: 10.0.10.0/24
+  FirstDBCidrBlock:
+    Description: Provide the first CidrBlock for database subnet
+    Type: String
+    Default: 10.0.11.0/24
+  SecondDBCidrBlock:
+    Description: Provide the second CidrBlock for database subnet
+    Type: String
+    Default: 10.0.12.0/24
+
+  #DB params
+  DBVersion:
+    Description: Version of the postgres engine
+    Type: String
+    Default: '13.7'
+    AllowedValues: [ '13.7' ]
+  DBIdentifier:
+    Description: A unique name for the DB instance.
+    Type: String
+    Default: dbidentifier
+  DBAllocatedStorage:
+    Description: The amount of storage in gibibytes (GiB) to be initially allocated for the database instance
+    Type: Number
+    Default: 5
+    MinValue: 5
+    MaxValue: 25
+  DBInstanceClass:
+    Description: Version of the Postgres engine
+    Type: String
+    Default: db.t3.micro
+    AllowedValues: [ db.t3.micro ]
+  DBName:
+    Description: Database name
+    Type: String
+    Default: imagedb
+  DBUsername:
+    Description: Database username
+    Type: String
+    Default: postgres
+  DBPassword:
+    Description: Database password
+    Type: String
+    NoEcho: true
+    Default: 12345678
+  DBPort:
+    Description: Database port
+    Type: Number
+    Default: 5432
+
+  #App params
+  WebAppRoleName:
+    Description: WebApp role name
+    Type: String
+    Default: DefaultWebAppRoleName
+  WebAppSSMPolicyArn:
+    Description: Policy arn for SSM
+    Type: String
+    Default: arn:aws:iam::aws:policy/AmazonSSMFullAccess
+
+Resources:
+  VpcStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://src-articles.s3.eu-central-1.amazonaws.com/ec2-rds/CF-vpc.yaml
+      Parameters:
+        PublicAvaliabilityZone: !Ref PublicAvaliabilityZone
+        VPCCidrBlock: !Ref VPCCidrBlock
+        PublicCidrBlock: !Ref PublicCidrBlock
+        FirstDBCidrBlock: !Ref FirstDBCidrBlock
+        SecondDBCidrBlock: !Ref SecondDBCidrBlock
+        FirstDBAvaliabilityZone: !Ref FirstDBAvaliabilityZone
+        SecondDBAvaliabilityZone: !Ref SecondDBAvaliabilityZone
+
+  DBStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - VpcStack
+    Properties:
+      TemplateURL: https://src-articles.s3.eu-central-1.amazonaws.com/ec2-rds/CF-db.yaml
+      Parameters:
+        FirstDBSubnet: !GetAtt VpcStack.Outputs.FirstDBSubnet
+        SecondDBSubnet: !GetAtt VpcStack.Outputs.SecondDBSubnet
+        InternalTraffic: !GetAtt VpcStack.Outputs.InternalTraffic
+        DBVersion: !Ref DBVersion
+        DBIdentifier: !Ref DBIdentifier
+        DBAllocatedStorage: !Ref DBAllocatedStorage
+        DBInstanceClass: !Ref DBInstanceClass
+        DBName: !Ref DBName
+        DBUsername: !Ref DBUsername
+        DBPassword: !Ref DBPassword
+        DBPort: !Ref DBPort
+
+  WebAppStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - VpcStack
+      - DBStack
+    Properties:
+      TemplateURL: https://src-articles.s3.eu-central-1.amazonaws.com/ec2-rds/CF-app.yaml
+      Parameters:
+        PublicSubnet: !GetAtt VpcStack.Outputs.PublicSubnet
+        InternalTraffic: !GetAtt VpcStack.Outputs.InternalTraffic
+        PublicTraffic: !GetAtt VpcStack.Outputs.PublicTraffic
+        WebAppRoleName: !Ref WebAppRoleName
+        WebAppSSMPolicyArn: !Ref WebAppSSMPolicyArn
