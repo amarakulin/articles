@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "ServiceRoleName",
+    "ParameterValue": "NotDefaultServiceRoleName"
+  },
+  {
+    "ParameterKey": "DBUsername",
+    "ParameterValue": "NotDefaultDBUsername"
+  }
+]

@@ -395,7 +395,7 @@ Resources:
 A lot of information for today :)
 You're tired to read, I'm tired to write.
 I purpose to make both of us a bit happier.
-So if you are willing to get to know how I run an app on those stacks, go ahead and read the next [article](DEPLOY.md) (will be soon).
+So if you are willing to get to know how I run an app on those stacks, go ahead and read the next [article](DEPLOY.md).
 
 ##Basic stinky ending
 
