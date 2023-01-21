@@ -1,12 +1,14 @@
-#IAM explaining on dogs
+# IAM explaining on dogs
 
-##Introducing
+## Introducing
 I would like to share my thoughts about AWS IAM. We will look through main statements and definitions. 
 Let's put away hard official documentation and just take a look on hard things from real world point.
 That is why we will need to get along with Dogs
 
+![doge-meme](pictures/doge-meme-8bit-glasses.jpg)
 
-##Role and Policy
+
+## Role and Policy
 IAM has tons of instruments to satisfy the security of your system.
 But today I will walk you through two essential Roles and Policies.
 
@@ -37,7 +39,9 @@ Examples of StreetPolicies:
 * Having unlimited number of partners(cool)
 * Taking a pee on every car(incredible)
 
-##What is in common with Lambda AWS and dog?
+___
+
+## What is in common with Lambda AWS and dog?
 For now, we know the theory of the Role and Policy, to follow them in a practice we will need to configure a json file with AWS format.
 
 Let's think that AWS Lambda is our "Pet" dog.
@@ -50,9 +54,11 @@ The following table will get rid of your doubts:
 | leaves the wool all on the couch | store logs in CloudWatch  | 
 | is allowed to notify pet owner   | send notifications to SNS |
 
-### Dog example
-How it would look in AWS systems if a "Dog" was a service:
+___
 
+### Dog example
+
+How it would look in AWS systems if a "Dog" was a service:
 Let's see how the regular "PET" dog looks in AWS configurations
 
 **PetRole**
@@ -118,6 +124,8 @@ The `Effect` and `Action` was described above, so let's take a look on the last 
 
 Resource - The path to apply the action.
 You can specify a particular service or range of services to for which your rules will be used ~~or just hammer and slap the wildcard "*"~~
+
+___
 
 ### Role and Policy for AWS Lambda example
 From the description above let's make the Lambda IAM configuration
@@ -194,7 +202,9 @@ To sum up, you are able to arrange different Policies to a Role. Now you could a
 If you are willing to assume the roles to your friend or colleague, then you will need to create User and maybe UserGroups. 
 But this is discussion for another article, something telling me that dogs would not work there :)
 
-##Not required actions
+___
+
+## Not required actions
 
 I had a chance to present the article to you. I am glad that you spend some time of your best years for it.
 Why would we take a bit more?
