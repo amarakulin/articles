@@ -1,38 +1,43 @@
-# AWS Configuration EC2 + RDS with CloudFormation
+# Practical guide EC2 + RDS with CloudFormation
 
 ## Introducing
 
-I will keep it short.
-This article shows how to configure an application + db on AWS services by using CloudFormation.
+This article shows how to provision AWS infrastructure for a web-app with database by using CloudFormation.
+
 Let's jump right in!
 
 ## Fast track for mature guys
 
 For those, how is aware how to deploy apps in AWS or for those, how hate to read:
-There is a link to the github repo[attach a link] with all resources.
+Welcome to the [github folder](CF-templates)
 
 ## Design
 
 We are going to configure the following schema:
-![EC2-RDS design](pictures/EC2-RDS.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/EC2-RDS.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
 Down below, I explain each of the component from the design with pictures, ~~cats,~~code, and my bad English
 
 ## Creating infrastructure
 
-I've made the `CF-Vpc.yaml` CloudFormation template which is responsible for infrastructure
+I've made the `CF-vpc.yaml` CloudFormation [template](CF-templates/CF-vpc.yaml) which is responsible for infrastructure
 There are couple details that I would like to describe:
-1. The IGW(InternetGateway) allow us to assept traffic from the internet.
-2. The PublicRouteTable associates the traffic from IGW to our PublicSubnet, so the WebApp is happy to recieve requests.
-3. The DBRouteTable associates with private subnets and covers by InternalTraffic security group, as a result, DB can be called by instances which are belongs to the VPC. 
-4. The WebApp connects to the DB as he is a part of VPC.
-> **_NOTE:_**  There are two private subnets, because AWS required to have at least two subnets for a RDS instance.
+ 1. The `IGW`(InternetGateway) allow us to accept traffic from the internet.
+ 2. The `PublicRouteTable` associates the traffic from IGW to our `PublicSubnet`, so the `WebApp` is happy to receive requests.
+ 3. The `DBRouteTable` associates with private subnets and covers by `InternalTraffic` security group, as a result, `DB` can be called by `WebApp` instance. 
+ 4. The `WebApp` connects to the `DB` as he is a part of `VPC`.
+> **_NOTE:_**  There are two private subnets, because AWS required to have at least two subnets for RDS instances.
 
 To many words, no code and just one big picture on top. Sounds bad.
 Let's fix it! 
 For example, we take a look how the point 2 could be configured by CloudFormation and visualized by schemas.
 
-First things first we create the VPC
+* First things first we need to create the `VPC`
 ```yaml
 Parameters:
   VPCCidrBlock:
@@ -45,9 +50,14 @@ Resources:
       CidrBlock: !Ref VPCCidrBlock
   ...
 ```
-![](pictures/vpc.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/vpc.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-Creating the Internet Gateway, for now it's attached to nothing, that's why the IGW outside of VPC
+* Creating the `InternetGateway`. As you can see it's attached to nothing, that's why the `IGW` outside the `VPC`
 ```yaml
 Resources:
   IGW:
@@ -55,9 +65,14 @@ Resources:
     Properties: {}
   ...
 ```
-![](pictures/vpc-igw.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/vpc-igw.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-Here we go, now the IGW has been attached to our VPC
+* Here we go, now the `IGW` has been attached to our `VPC`
 ```yaml
 Resources:
   VPCInternetGatewayAttachment:
@@ -67,9 +82,14 @@ Resources:
       VpcId: !Ref VPC
   ...
 ```
-![](pictures/vpc-igw-attachment.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/vpc-igw-attachment.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-The object will help us to connect to a Subnet, for now is just stays in the VPC
+* The `RoutTable` will help us to connect to a `Subnet`, for now is just stays in the `VPC`
 ```yaml
 Resources:
   PublicRouteTable:
@@ -78,9 +98,14 @@ Resources:
       VpcId: !Ref VPC
   ...
 ```
-![](pictures/prt.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/prt.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-The Subnet which is has a range of addresses and placed into VPC with an AvailabilityZone
+* The `Subnet` which is has a range of addresses and placed into `VPC` with an `AvailabilityZone`
 ```yaml
 Parameters:
   PublicAvaliabilityZone:
@@ -98,9 +123,14 @@ Resources:
       MapPublicIpOnLaunch: true # This will indicate that all instances launched on the subnet receive public IPv4 addresses  
   ...
 ```
-![](pictures/ps.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/ps.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-The step when we make a bridge between RoutTable and our Subnet
+* The step when we make a bridge between `RoutTable` and our `Subnet`
 ```yaml
 Resources:
   PublicSubnetRouteTableAssociation: 
@@ -110,12 +140,17 @@ Resources:
       SubnetId: !Ref PublicSubnet
   ...
 ```
-![](pictures/prt-ps-association.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/prt-ps-association.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-The bridge between RoutTable and our IGW(Just an arrow between those two)
+* The bridge between `RoutTable` and our `IGW`(Just an arrow between those two)
 ```yaml
 Resources:
-  PublicIGWRoute: # 
+  PublicIGWRoute:
   Type: AWS::EC2::Route
     Properties:
       GatewayId: !Ref IGW
@@ -123,9 +158,14 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
   ...
 ```
-![](pictures/igw-prt-association.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/igw-prt-association.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
-And finally the security group which is opens the traffic from the internet
+* And finally the `SecurityGroup` opens the traffic from the internet
 ```yaml
 Resources:
   PublicTraffic:
@@ -140,20 +180,29 @@ Resources:
       GroupDescription: public access
   ...
 ```
-![](pictures/psg.jpg)
+<div>
+  <img width="20">    
+  <img src="pictures/psg.jpg" width="600">
+  <img width="20">
+</div>
+<br>
 
 
-> The steps above show how the different types of Resources interact with each other, some of them need to create objects other is need to make relationships
+> **_Sum up_**
+> 
+> The steps above shows how the different types of AWS Resources interact with each other. 
+>
+> Some of them need to create objects(`AWS::EC2::RouteTable`) other is need to make relationships(`AWS::EC2::SubnetRouteTableAssociation`)
 
 ## Configure RDS
 
-The CloudFormation stack with environment have been configured.
-Let's configure DB to put it in FirstDBSubnet by creating a separate CloudFormation template
+The CloudFormation stack with the environment has been configured.
+Let's configure `DB` to put it in `FirstDBSubnet` by creating a separate CloudFormation template.
 
-The following configuration provided within the `CF-db.yaml` file
+The following configuration is provided within the `CF-db.yaml` [file](CF-templates/CF-db.yaml)
 
-Most likely we just need to specify the database parameters such as storage, engine and other database specifics as well as credentials
-But I would like to highlight the security group, so the DB will not be totally death and at least WebApp(that's all we need) will be able to query it.
+Most likely we just need to specify the database parameters such as storage, engine, and other database specifics as well as credentials
+But I would like to highlight the `VPCSecurityGroups`, so the `DB` will not be totally deaf, and at least `WebApp`(that's all we need) will be able to query it since they both belong to the `InternalTraffic`
 ```yaml
 Parameters:
   InternalTraffic:
@@ -169,7 +218,7 @@ Resources:
   ...
 ```
 
-One more thing, the two subnets for DB have to be specified together by `DBSubnetGroup` 
+One more thing, the two private `Subnet` for `DB` have to be specified together by `DBSubnetGroup` 
 
 ```yaml
 Parameters:
@@ -191,12 +240,12 @@ Resources:
 
 ## Configure EC2
 
-Last but not least, we need to configure WebApp for PublicSubnet by creating a separate CloudFormation template
+Last but not least, we need to configure `WebApp` for `PublicSubnet` by creating a separate CloudFormation template
 
-The following configuration provided within the `CF-app.yaml` file
+The following configuration provided within the `CF-app.yaml` [file](CF-templates/CF-app.yaml)
 
-I insist on looking a bit closer to the WebApp Resources
-I will walk through you for each Property
+I insist on looking a bit closer to the `WebApp` Resources
+I will walk you through each Property
 ```yaml
 Parameters:
   PublicSubnet:
@@ -230,18 +279,18 @@ Resources:
   ...
 ```
 Properties:
-- `SecurityGroupIds`: InternalTraffic to connect to the DB, PublicTraffic to receive calls from the internet
-- `SubnetId`: Inject the WebApp to PublicSubnet configured in **Creating infrastructure** charter
+- `SecurityGroupIds`: `InternalTraffic` to connect to the `DB`, `PublicTraffic` to receive calls from the internet
+- `SubnetId`: Inject the `WebApp` to `PublicSubnet` configured in **Creating infrastructure** charter
 - `InstanceType`: The free tier eligible type. 
 - `IamInstanceProfile`: The Roles that could be attached to your EC2 instance to call other AWS services.
-- `ImageId`: I will use the System Manager, that's required to have the TLS certificate for an instance. All AWS AMI already have TLS certificates ([AWS docs](https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-launch-managed-instance.html)), so I've picked up on of them(That's why I hardcoded this one)
-- `UserData`: The property allow us to run shell script then on startup of instance. So you probably have an idea to write the script which will run your app, but I think the provisioning infrastructure process and deploying application process could change for different reason at different time, so they have to be strongly decoupled. I use the UserData to provision infrastructure by preinstalling jdk. For the deployment I will use System Manager(in nutshell SSM provides ability to run scripts on your instances)
+- `ImageId`: I will use the System Manager, that's required to have the TLS certificate for an instance. All AWS AMI already have TLS certificates ([AWS docs](https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-launch-managed-instance.html)), so I've picked up one of them(That's why I hardcoded this one)
+- `UserData`: The property allows us to run a shell script on the startup of an instance. So you probably have an idea to write the script which will run your app, but I think the provisioning infrastructure process and deploying application process could change for different reasons at different time, so they have to be strongly decoupled. I use `UserData` to provision infrastructure by preinstalling jdk. For the deployment, I will use System Manager(in nutshell SSM provides the ability to run scripts on your instances)
 - `Tags`: The tag helps to identify the instance in the future on the deployment process.
 
 
-`IamInstanceProfile` could be huge and mysterious. The down below I've split into the pieces for you:
+`IamInstanceProfile` could be huge and mysterious. I've split into the pieces for you:
 
-The object is just set of Roles for your instance. By the way I have a article with explanation of Roles by examples with the dogs(TODO add link).
+The object is just a set of `Roles` for your instance. By the way, I have an article with an explanation of `Roles` by examples with the [dogs](https://medium.com/@pichkasik.dev/aws-iam-explaining-with-dogs-9141c9170cd1).
 ```yaml
 Resources:
   WebAppInstanceProfile:
@@ -252,9 +301,9 @@ Resources:
   ... 
 ```
 
-`WebAppRole` - consist of two policies. They present a bad and good example respectively.
-The `WebAppSSMPolicyArn` - needs to execute scripts in the instance by SSM. It's bad Policy example, since we have access to all action and resources(Don't do that at home).
-The `WebAppS3Policy` - needs to get the jar file with an app from S3 bucket. It's good Policy example, since we provide necessary resources and actions only. There is no place to create or update something in S3, we are allowed to read only.
+`WebAppRole` - consists of two policies. They present a bad and good example respectively.
+The `WebAppSSMPolicyArn` - needs to execute scripts in the instance by SSM. It's a bad `Policy` example since we have access to all action and resources(Don't do that at home).
+The `WebAppS3Policy` - needs to get the jar file with an app from the S3 bucket. It's a good `Policy` example since we provide necessary resources and actions only. There is no place to create or update something in S3, we are allowed to read-only.
 ```yaml
 Parameters:
   WebAppRoleName:
@@ -299,15 +348,15 @@ Resources:
 
 ## Getting all together
 
-So far we have three CloudFormation templates, we need to create each of them one by one and pass Parameters correctly.
-Sounds that we could automate those actions somehow.
+So far we have three CloudFormation templates, we need to create each of them one by one and pass `Parameters` correctly.
+Sounds like we could automate those actions somehow.
 We need
 Well...
 What is better than three CloudFormation templates?
 Right!
 Four CloudFormation templates.
 
-I've created the `CF-parent.yaml` this template is a manager to correctly provision each stack
+I've created the `CF-parent.yaml` this [template](CF-templates/CF-parent.yaml) is a manager to correctly provision each stack
 
 We are going to use the `AWS::CloudFormation::Stack` Resource only. 
 He creates stack from `TemplateURL` and injects parameters from `Parameters` section into the template.
@@ -343,14 +392,15 @@ Resources:
 ## Deployment
 
 A lot of information for today :)
-You're tiered to read, I'm tiered to write.
+You're tired to read, I'm tired to write.
 I purpose to make both of us a bit happier.
-So if you are willing to get know how I run an app on those stacks, go ahead and read the next article.
-Deployment of your dream[link to deployment article]
+So if you are willing to get to know how I run an app on those stacks, go ahead and read the next [article](DEPLOY.md) (will be soon).
 
-##Conclusion
+##Basic stinky ending
 
 Finally, you are hero, you've made it. You read whole text. Thank you for that!
+
 Any question? Suggestion? Mistakes?
-Feel free to comment anything that cross your mind. I would love to respond
+
+Feel free to leave a comment on [Medium]() or you can create PR to discuss anything that crosses your mind. I would love to respond!
 
