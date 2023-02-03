@@ -33,6 +33,7 @@ There are couple details that I would like to describe:
  4. The `WebApp` connects to the `DB` as he is a part of `VPC`.
 > **_NOTE:_**  There are two private subnets, because AWS required to have at least two subnets for RDS instances.
 
+### Detailed Example
 To many words, no code and just one big picture on top. Sounds bad.
 Let's fix it! 
 For example, we take a look how the point 2 could be configured by CloudFormation and visualized by schemas.
@@ -402,5 +403,8 @@ Finally, you are hero, you've made it. You read whole text. Thank you for that!
 
 Any question? Suggestion? Mistakes?
 
-Feel free to leave a comment on [Medium]() or you can create PR to discuss anything that crosses your mind. I would love to respond!
+Feel free to leave a comment on [Medium](https://medium.com/@pichkasik.dev/aws-practical-guide-ec2-rds-with-cloudformation-93ff2cbcb8e) or you can create PR to discuss anything that crosses your mind. I would love to respond!
 
+[**LinkedIn**](https://www.linkedin.com/in/pichkasik/)
+
+[**Gmail**](pichkasik.dev@gmail.com)
