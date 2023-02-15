@@ -405,6 +405,6 @@ Any question? Suggestion? Mistakes?
 
 Feel free to leave a comment on [Medium](https://medium.com/@pichkasik.dev/aws-practical-guide-ec2-rds-with-cloudformation-93ff2cbcb8e) or you can create PR to discuss anything that crosses your mind. I would love to respond!
 
-[**LinkedIn**](https://www.linkedin.com/in/pichkasik/)
+**LinkedIn** -> [Profile](https://www.linkedin.com/in/pichkasik/)
 
-[**Gmail**](pichkasik.dev@gmail.com)
+**Gmail** -> pichkasik.dev@gmail.com
